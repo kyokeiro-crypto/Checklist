@@ -1,55 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: checklists
-    // Document ID: auto-generated
-    // Fields:
-    //   - customerName: string (required, max 100 chars)
-    //   - phasesData: string (required, max 50000 chars)
-    //   - createdBy: string (required, immutable)
-    //   - createdAt: timestamp (required, immutable)
-    //   - updatedAt: timestamp (required)
-    //
-    // ===============================================================
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
-    }
-    
-    function isValidChecklist(data) {
-      return hasOnlyAllowedFields(['customerName', 'phasesData', 'createdBy', 'createdAt', 'updatedAt']) &&
-             data.customerName is string && data.customerName.size() <= 100 &&
-             data.phasesData is string && data.phasesData.size() <= 50000 &&
-             data.createdBy is string && data.createdBy.size() > 0 &&
-             data.createdAt != null &&
-             data.updatedAt != null;
-    }
-    
-    match /checklists/{checklistId} {
-      // Allow any authenticated team member to read
-      allow read: if isAuthenticated();
-      
-      // Allow any authenticated team member to create
-      allow create: if isAuthenticated() && 
-                    isValidChecklist(request.resource.data) &&
-                    request.resource.data.createdBy == request.auth.uid;
-                    
-      // Allow any authenticated team member to update
-      allow update: if isAuthenticated() &&
-                    isValidChecklist(request.resource.data) &&
-                    request.resource.data.createdBy == resource.data.createdBy &&
-                    request.resource.data.createdAt == resource.data.createdAt;
-                    
-      // Allow any authenticated team member to delete
-      allow delete: if isAuthenticated();
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }

@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "Checklist": {
+      "title": "Checklist",
+      "description": "A rental checklist for a customer",
+      "type": "object",
+      "properties": {
+        "customerName": {
+          "type": "string",
+          "description": "Name of the customer"
+        },
+        "phasesData": {
+          "type": "string",
+          "description": "JSON stringified phases data"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the user who created the checklist"
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "timestamp",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["customerName", "phasesData", "createdBy", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/checklists/{checklistId}": {
+      "schema": { "$ref": "#/entities/Checklist" },
+      "description": "Stores rental checklists"
+    }
+  }
+}

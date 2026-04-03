@@ -1,0 +1,5 @@
+{
+  "name": "賃貸契約フロー確認",
+  "description": "日本の不動産賃貸契約フローを確認するためのインタラクティブなToDoリストアプリ。",
+  "requestFramePermissions": []
+}

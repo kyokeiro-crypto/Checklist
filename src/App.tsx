@@ -38,8 +38,10 @@ const initialData: Phase[] = [
     title: '1. 顧客要望・身元確認 (ヒアリング)',
     iconName: 'user',
     factors: [
-      { id: 'f1-visit', title: '来店のきっかけ', type: 'checkbox_group', value: [], options: ['ご紹介', '引越し予定の地域にあった', '会社名を知っていた', '以前にも利用した', '今の住まいから近所', '会社から指定', '物件看板', '当社ホームページ', 'Facebook', 'Instagram', 'SUUMO', 'その他'] },
+      { id: 'f1-visit', title: '来店のきっかけ', type: 'checkbox_group', value: [], options: ['ご紹介', '引越し予定の地域にあったから', '会社名を知っていたから', '以前にも利用したことがあったから', '今の住まいから近所だから', '会社から指定されて', '物件看板', '当社ホームページ', 'Facebook', 'Instagram', 'SUUMO', 'その他'] },
+      { id: 'f1-visit-other', title: 'その他のきっかけ詳細', type: 'text', value: '', placeholder: '具体的なきっかけをご記入ください' },
       { id: 'f1-reason', title: '引っ越し理由', type: 'checkbox_group', value: [], options: ['入学', '就職', '転勤', '結婚', '別居', '短期入居', '独立', '契約満了', '現居改善', '家族増員', 'ペットを飼う', '通勤通学不便', '家賃を安く', '駐車場改善', '契約条件違反', 'その他'] },
+      { id: 'f1-reason-other', title: 'その他の理由詳細', type: 'text', value: '', placeholder: '具体的な理由をご記入ください' },
       { id: 'f1-name', title: 'お客様氏名', type: 'text', value: '', placeholder: '氏名' },
       { id: 'f1-kana', title: 'ふりがな', type: 'text', value: '', placeholder: 'ふりがな' },
       { id: 'f1-type', title: '個人/法人', type: 'select', value: '', options: ['個人', '法人'] },
@@ -49,26 +51,32 @@ const initialData: Phase[] = [
       { id: 'f1-address', title: 'ご住所', type: 'text', value: '', placeholder: '〒' },
       { id: 'f1-email', title: 'メールアドレス', type: 'text', value: '', placeholder: 'example@email.com' },
       { id: 'f1-relation', title: '借主との関係', type: 'select', value: '', options: ['本人(借主)', '夫', '妻', '子供', '親', '兄弟', '親戚', '上司・同僚', '代理人', '友人', '社宅担当者', '社宅代行業者', '法人入居者', 'その他'] },
+      { id: 'f1-relation-other', title: 'その他の関係詳細', type: 'text', value: '', placeholder: '具体的な関係をご記入ください' },
       { id: 'f1-job', title: '職業について', type: 'select', value: '', options: ['学生', '正社員', 'アルバイト・パート', '契約社員・準社員', '役員・経営者', '無職', 'その他'] },
+      { id: 'f1-job-other', title: 'その他の職業詳細', type: 'text', value: '', placeholder: '具体的な職業をご記入ください' },
       { id: 'f1-jobtype', title: '職業種別', type: 'select', value: '', options: ['会社員', '公務員', 'フリーター', '自営業', '求職', 'その他'] },
+      { id: 'f1-jobtype-other', title: 'その他の職業種別詳細', type: 'text', value: '', placeholder: '具体的な職業種別をご記入ください' },
       { id: 'f1-company', title: '勤務先・学校名', type: 'text', value: '', placeholder: '名称' },
       { id: 'f1-company-addr', title: '勤務先所在地・TEL', type: 'text', value: '', placeholder: '所在地 / TEL' },
       { id: 'f1-income', title: '税込年収・勤続年数', type: 'text', value: '', placeholder: '例: 400万円 / 3年' },
       { id: 'f1-occupants', title: '入居者構成', type: 'checkbox_group', value: [], options: ['1名', '2名以上', '同居(同棲)', '夫婦', '夫婦・子', '親・夫婦・子', '母・子', '高齢者', '身体障がい者'] },
       { id: 'f1-guarantor', title: '保証人の予定', type: 'select', value: '', options: ['親', '兄弟', '子供', '親戚', '上司・同僚', '友達', '検討中', '保証人不要物件', 'その他'] },
+      { id: 'f1-guarantor-other', title: 'その他の保証人詳細', type: 'text', value: '', placeholder: '具体的な保証人をご記入ください' },
       { id: 'f1-area', title: '希望区', type: 'checkbox_group', value: [], options: ['中央', '西', '手稲', '北', '東', '白石', '厚別', '豊平', '清田', '南', '近郊', 'その他'] },
+      { id: 'f1-area-other', title: 'その他の希望区詳細', type: 'text', value: '', placeholder: '具体的な希望区をご記入ください' },
       { id: 'f1-line', title: '希望沿線・駅・徒歩', type: 'text', value: '', placeholder: '例: 南北線 さっぽろ駅 徒歩10分以内' },
       { id: 'f1-buildtype', title: '建物種類', type: 'checkbox_group', value: [], options: ['アパート', 'マンション', '分譲リース', '戸建', 'テラスハウス', '学生寮', 'ウィークリー型', 'その他'] },
+      { id: 'f1-buildtype-other', title: 'その他の建物種類詳細', type: 'text', value: '', placeholder: '具体的な建物種類をご記入ください' },
       { id: 'f1-layout', title: '間取りタイプ', type: 'checkbox_group', value: [], options: ['1R・1K', '1LDK', '2LDK', '3LDK', '4LDK', '5LDK以上'] },
       { id: 'f1-rent', title: '希望家賃 (共益費・駐車代込)', type: 'text', value: '', placeholder: '上限 〇〇 万円まで' },
       { id: 'f1-parking', title: '駐車場・車タイプ', type: 'text', value: '', placeholder: '例: 要1台 / 普通乗用' },
       { id: 'f1-special', title: '特別条件', type: 'checkbox_group', value: [], options: ['犬', '猫', '楽器', '短期契約', '学校区', '対面K', 'エアコン', '2階以上', '都市ガス', '高層階', 'AL', 'テナント居抜き'] },
       { id: 'f1-timing', title: '引越時期', type: 'text', value: '', placeholder: '例: 2024年4月上旬' },
       { id: 'f1-current', title: '現住居分類', type: 'select', value: '', options: ['賃貸', '持家', '社宅', '寮', '親元', '親戚宅', '友人宅', 'その他'] },
+      { id: 'f1-current-other', title: 'その他の現住居分類詳細', type: 'text', value: '', placeholder: '具体的な現住居分類をご記入ください' },
       { id: 'f1-current-rent', title: '現住居の家賃・間取り', type: 'text', value: '', placeholder: '例: 1LDK / 6万円' },
       { id: 'f1-current-good', title: '現住居の良い点', type: 'textarea', value: '', placeholder: '良い点をご記入ください' },
       { id: 'f1-current-bad', title: '現住居の不満な点', type: 'textarea', value: '', placeholder: '不満な点をご記入ください' },
-      { id: 'f1-idcopy', title: '身分証コピー取得', type: 'checkbox_group', value: [], options: ['在留カード', 'パスポート', '顔写真', '運転免許証', '銀行通帳', '住民票', '車検証', 'その他'] },
     ],
     tasks: [
       { id: 't1-1', title: 'ヒアリングシート記入', description: 'お客様の希望条件、引越理由、入居時期の詳細を確認', completed: false },
@@ -107,6 +115,8 @@ const initialData: Phase[] = [
     factors: [
       { id: 'f4-1', title: '申込方法', type: 'select', value: '', options: ['WEB電子申込 (ITANDI BB等)', '紙・FAX申込'] },
       { id: 'f4-2', title: '必要書類', type: 'checkbox_group', value: [], options: ['在留カード', '収入証明 (源泉徴収票等)', '住民票', '内定通知書'] },
+      { id: 'f4-idcopy', title: '身分証コピー取得', type: 'checkbox_group', value: [], options: ['在留カード', 'パスポート', '顔写真', '運転免許証', '銀行通帳', '住民票', '車検証', 'その他'] },
+      { id: 'f4-idcopy-other', title: 'その他の身分証詳細', type: 'text', value: '', placeholder: '具体的な身分証をご記入ください' },
     ],
     tasks: [
       { id: 't4-1', title: '申込書記入', description: 'お客様へ申込書の記入依頼、必要書類の回収', completed: false },
@@ -632,7 +642,6 @@ export default function App() {
         <div className="flex-1 overflow-y-auto p-2 space-y-4">
           {categories.map(category => {
             const items = groupedChecklists[category] || [];
-            if (items.length === 0 && category !== '01-問合せ中案件') return null;
             
             return (
               <div key={category} className="space-y-1">
@@ -890,15 +899,56 @@ export default function App() {
                         >
                           <div className="border-t border-slate-100 px-3 py-3 sm:px-4 sm:py-4 bg-slate-50/50">
                             
+                            {/* Tasks Section */}
+                            <div className="mb-4 sm:mb-6">
+                              <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center">
+                                <CheckSquare className="w-4 h-4 mr-1.5 text-slate-500"/>
+                                基本タスク
+                              </h4>
+                              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                {phase.tasks.map((task, index) => (
+                                  <div 
+                                    key={task.id}
+                                    onClick={() => toggleTask(phase.id, task.id)}
+                                    className={`group flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 cursor-pointer transition-all duration-200 ${
+                                      index !== phase.tasks.length - 1 ? 'border-b border-slate-100' : ''
+                                    } ${
+                                      task.completed 
+                                        ? 'bg-slate-50 hover:bg-slate-100' 
+                                        : 'hover:bg-blue-50/50'
+                                    }`}
+                                  >
+                                    <div className="flex-shrink-0 mt-0.5">
+                                      {task.completed ? (
+                                        <motion.div
+                                          initial={{ scale: 0.8 }}
+                                          animate={{ scale: 1 }}
+                                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                        >
+                                          <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+                                        </motion.div>
+                                      ) : (
+                                        <Circle className="w-5 h-5 sm:w-6 sm:h-6 text-slate-300 group-hover:text-blue-400 transition-colors" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h5 className={`text-sm sm:text-base font-bold mb-1 transition-colors ${task.completed ? 'text-slate-500 line-through' : 'text-slate-700 group-hover:text-blue-700'}`}>
+                                        {task.title}
+                                      </h5>
+                                      <p className={`text-xs sm:text-sm transition-colors ${task.completed ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        {task.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
                             {/* Factors Section */}
                             {phase.factors && phase.factors.length > 0 && (
-                              <div className="mb-4 sm:mb-6 bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                  <h4 className="text-sm font-bold text-slate-700 flex items-center">
-                                    <Settings className="w-4 h-4 mr-1.5 text-slate-500"/>
-                                    案件詳細設定
-                                  </h4>
-                                  {phase.id === 'phase-1' && (
+                              <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-sm">
+                                {phase.id === 'phase-1' && (
+                                  <div className="flex justify-end mb-4">
                                     <button
                                       onClick={downloadHearingSheet}
                                       className="flex items-center space-x-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1.5 rounded transition-colors border border-blue-200"
@@ -906,14 +956,28 @@ export default function App() {
                                       <Download className="w-3.5 h-3.5" />
                                       <span>シート出力</span>
                                     </button>
-                                  )}
-                                </div>
+                                  </div>
+                                )}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                                  {phase.factors.map(factor => (
-                                    <div key={factor.id} className={`space-y-2 ${factor.type === 'textarea' || factor.type === 'checkbox_group' ? 'md:col-span-2' : ''}`}>
-                                      <label className="text-xs font-semibold text-slate-600">{factor.title}</label>
+                                  {phase.factors.map(factor => {
+                                    // Conditional rendering for -other fields
+                                    if (factor.id.endsWith('-other')) {
+                                      const parentId = factor.id.replace('-other', '');
+                                      const parentFactor = phase.factors?.find(f => f.id === parentId);
+                                      if (!parentFactor) return null;
                                       
-                                      {factor.type === 'text' && (
+                                      const isOtherSelected = 
+                                        (Array.isArray(parentFactor.value) && parentFactor.value.includes('その他')) ||
+                                        (parentFactor.value === 'その他');
+                                        
+                                      if (!isOtherSelected) return null;
+                                    }
+
+                                    return (
+                                      <div key={factor.id} className={`space-y-2 ${factor.type === 'textarea' || factor.type === 'checkbox_group' ? 'md:col-span-2' : ''}`}>
+                                        <label className="text-xs font-semibold text-slate-600">{factor.title}</label>
+                                        
+                                        {factor.type === 'text' && (
                                         <input 
                                           type="text" 
                                           value={factor.value || ''} 
@@ -969,60 +1033,10 @@ export default function App() {
                                         </div>
                                       )}
                                     </div>
-                                  ))}
+                                  )})}
                                 </div>
                               </div>
                             )}
-
-                            {/* Tasks Section */}
-                            <div>
-                              <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center">
-                                <CheckSquare className="w-4 h-4 mr-1.5 text-slate-500"/>
-                                基本タスク
-                              </h4>
-                              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                {phase.tasks.map((task, index) => (
-                                  <div 
-                                    key={task.id}
-                                    onClick={() => toggleTask(phase.id, task.id)}
-                                    className={`group flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 cursor-pointer transition-all duration-200 ${
-                                      index !== phase.tasks.length - 1 ? 'border-b border-slate-100' : ''
-                                    } ${
-                                      task.completed 
-                                        ? 'bg-slate-50 hover:bg-slate-100' 
-                                        : 'hover:bg-blue-50/50'
-                                    }`}
-                                  >
-                                    <div className="flex-shrink-0 mt-0.5">
-                                      {task.completed ? (
-                                        <motion.div
-                                          initial={{ scale: 0.8 }}
-                                          animate={{ scale: 1 }}
-                                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                        >
-                                          <CheckCircle2 className="w-6 h-6 text-green-500" />
-                                        </motion.div>
-                                      ) : (
-                                        <Circle className="w-6 h-6 text-slate-300 group-hover:text-blue-400 transition-colors" />
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className={`text-sm sm:text-base font-medium transition-colors duration-200 ${
-                                        task.completed ? 'text-slate-500 line-through' : 'text-slate-800'
-                                      }`}>
-                                        {task.title}
-                                      </p>
-                                      <p className={`text-xs sm:text-sm mt-1 transition-colors duration-200 ${
-                                        task.completed ? 'text-slate-400' : 'text-slate-600'
-                                      }`}>
-                                        {task.description}
-                                      </p>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
                           </div>
                         </motion.div>
                       )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Circle, RefreshCw, ClipboardList, ChevronDown, ChevronUp, Home, Building, FileText, KeyRound, Download, CloudUpload, User, FileSpreadsheet, Plus, LogOut, LogIn, Trash2, Users, Search, Eye, PenTool, Settings, CheckSquare, Menu, X, Folder, Archive } from 'lucide-react';
+import { CheckCircle2, Circle, RefreshCw, ClipboardList, ChevronDown, ChevronUp, Home, Building, FileText, KeyRound, Download, CloudUpload, User, FileSpreadsheet, Plus, LogOut, LogIn, Trash2, Users, Search, Eye, PenTool, Settings, CheckSquare, Menu, X, Folder, Archive, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 import { db, auth, signInWithGoogle, logOut } from './firebase';
@@ -11,6 +11,7 @@ type Task = {
   title: string;
   description: string;
   completed: boolean;
+  data?: any;
 };
 
 type FactorType = 'text' | 'textarea' | 'select' | 'checkbox_group';
@@ -91,8 +92,8 @@ const initialData: Phase[] = [
       { id: 'f2-2', title: '資料提示方法', type: 'select', value: '', options: ['管理会社図面 (日本語)', '翻訳版テンプレート', 'VR / 動画案内'] },
     ],
     tasks: [
-      { id: 't2-1', title: '物件資料送付', description: '条件に合う物件を3〜4件ピックアップして送付', completed: false },
-      { id: 't2-2', title: '空室確認', description: '管理会社へ最新の空室状況と外国人入居の可否を確認', completed: false },
+      { id: 't2-1', title: '物件資料送付', description: '', completed: false, data: { links: [] } },
+      { id: 't2-2', title: '物件确认', description: '', completed: false, data: { foreignerAllowed: false, notes: '' } },
     ]
   },
   {
@@ -163,6 +164,63 @@ const renderIcon = (iconName: string) => {
     case 'key-round': return <KeyRound className="w-5 h-5" />;
     default: return <ClipboardList className="w-5 h-5" />;
   }
+};
+
+const FactorInput = ({ factor, phaseId, handleFactorChange }: { factor: Factor, phaseId: string, handleFactorChange: (phaseId: string, factorId: string, newValue: any) => void }) => {
+  const [localValue, setLocalValue] = useState(factor.value || '');
+  const [isComposing, setIsComposing] = useState(false);
+
+  useEffect(() => {
+    if (!isComposing) {
+      setLocalValue(factor.value || '');
+    }
+  }, [factor.value, isComposing]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setLocalValue(e.target.value);
+    if (!isComposing) {
+      handleFactorChange(phaseId, factor.id, e.target.value);
+    }
+  };
+
+  const handleCompositionStart = () => setIsComposing(true);
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setIsComposing(false);
+    handleFactorChange(phaseId, factor.id, e.currentTarget.value);
+  };
+
+  const handleBlur = () => {
+    if (localValue !== factor.value) {
+      handleFactorChange(phaseId, factor.id, localValue);
+    }
+  };
+
+  if (factor.type === 'textarea') {
+    return (
+      <textarea 
+        value={localValue} 
+        onChange={handleChange} 
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        onBlur={handleBlur}
+        className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow resize-y min-h-[80px]" 
+        placeholder={factor.placeholder} 
+      />
+    );
+  }
+
+  return (
+    <input 
+      type="text" 
+      value={localValue} 
+      onChange={handleChange} 
+      onCompositionStart={handleCompositionStart}
+      onCompositionEnd={handleCompositionEnd}
+      onBlur={handleBlur}
+      className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" 
+      placeholder={factor.placeholder} 
+    />
+  );
 };
 
 export default function App() {
@@ -241,10 +299,39 @@ export default function App() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list = snapshot.docs.map(doc => {
         const data = doc.data();
+        let phases = JSON.parse(data.phasesData);
+        
+        // Merge with initialData to ensure backward compatibility and apply schema updates
+        phases = phases.map((phase: Phase) => {
+          const initialPhase = initialData.find(p => p.id === phase.id);
+          if (initialPhase) {
+            const existingTasks = phase.tasks || [];
+            const mergedTasks = initialPhase.tasks.map(initialTask => {
+              const existing = existingTasks.find((t: Task) => t.id === initialTask.id);
+              if (existing) {
+                return { ...initialTask, completed: existing.completed };
+              }
+              return initialTask;
+            });
+
+            const existingFactors = phase.factors || [];
+            const mergedFactors = initialPhase.factors ? initialPhase.factors.map(initialFactor => {
+              const existing = existingFactors.find((f: Factor) => f.id === initialFactor.id);
+              if (existing) {
+                return { ...initialFactor, value: existing.value };
+              }
+              return initialFactor;
+            }) : undefined;
+
+            return { ...phase, tasks: mergedTasks, factors: mergedFactors };
+          }
+          return phase;
+        });
+
         return {
           id: doc.id,
           ...data,
-          phases: JSON.parse(data.phasesData)
+          phases: phases
         };
       });
       setChecklists(list);
@@ -346,6 +433,52 @@ export default function App() {
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
+  const handleTaskDataChange = (phaseId: string, taskId: string, newData: any) => {
+    if (!selectedChecklist) return;
+    const newPhases = selectedChecklist.phases.map((phase: Phase) => {
+      if (phase.id === phaseId) {
+        return {
+          ...phase,
+          tasks: phase.tasks.map(task => 
+            task.id === taskId ? { ...task, data: newData } : task
+          )
+        };
+      }
+      return phase;
+    });
+    
+    updateDoc(doc(db, 'checklists', selectedChecklist.id), {
+      phasesData: JSON.stringify(newPhases),
+      updatedAt: serverTimestamp()
+    });
+  };
+
+  const handleAddLink = (phaseId: string, taskId: string, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && e.currentTarget.value.trim() !== '') {
+      e.preventDefault();
+      const value = e.currentTarget.value.trim();
+      const phase = selectedChecklist?.phases.find((p: Phase) => p.id === phaseId);
+      const task = phase?.tasks.find((t: Task) => t.id === taskId);
+      if (!task) return;
+
+      const currentData = task.data || { links: [] };
+      const newLinks = [...(currentData.links || []), { id: Date.now().toString(), url: value }];
+      
+      handleTaskDataChange(phaseId, taskId, { ...currentData, links: newLinks });
+      e.currentTarget.value = '';
+    }
+  };
+
+  const handleRemoveLink = (phaseId: string, taskId: string, linkId: string) => {
+    if (!selectedChecklist) return;
+    const phase = selectedChecklist.phases.find((p: Phase) => p.id === phaseId);
+    const task = phase?.tasks.find((t: Task) => t.id === taskId);
+    if (!task || !task.data || !task.data.links) return;
+
+    const newLinks = task.data.links.filter((l: any) => l.id !== linkId);
+    handleTaskDataChange(phaseId, taskId, { ...task.data, links: newLinks });
   };
 
   const toggleTask = (phaseId: string, taskId: string) => {
@@ -935,9 +1068,60 @@ export default function App() {
                                       <h5 className={`text-sm sm:text-base font-bold mb-1 transition-colors ${task.completed ? 'text-slate-500 line-through' : 'text-slate-700 group-hover:text-blue-700'}`}>
                                         {task.title}
                                       </h5>
-                                      <p className={`text-xs sm:text-sm transition-colors ${task.completed ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        {task.description}
-                                      </p>
+                                      {task.id === 't2-1' ? (
+                                        <div className="mt-2" onClick={e => e.stopPropagation()}>
+                                          <input 
+                                            type="text"
+                                            className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                            placeholder="物件名やURLを入力してEnterを押す..."
+                                            onKeyDown={(e) => handleAddLink(phase.id, task.id, e)}
+                                          />
+                                          <div className="mt-3 space-y-2">
+                                            {task.data?.links?.map((link: any) => {
+                                              const isUrl = link.url.startsWith('http://') || link.url.startsWith('https://');
+                                              return (
+                                                <div key={link.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 p-2 rounded-md group">
+                                                  <div className="flex items-center space-x-2 overflow-hidden">
+                                                    <LinkIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                    {isUrl ? (
+                                                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline truncate">
+                                                        {link.url}
+                                                      </a>
+                                                    ) : (
+                                                      <span className="text-sm text-slate-700 truncate">{link.url}</span>
+                                                    )}
+                                                  </div>
+                                                  <button onClick={() => handleRemoveLink(phase.id, task.id, link.id)} className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <X className="w-4 h-4" />
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      ) : task.id === 't2-2' ? (
+                                        <div className="mt-2" onClick={e => e.stopPropagation()}>
+                                          <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-slate-50 rounded-md transition-colors border border-transparent hover:border-slate-200">
+                                            <input 
+                                              type="checkbox" 
+                                              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                              checked={task.data?.foreignerAllowed || false}
+                                              onChange={(e) => handleTaskDataChange(phase.id, task.id, { ...task.data, foreignerAllowed: e.target.checked })}
+                                            />
+                                            <span className="text-sm text-slate-700 font-medium">外国人入居可否</span>
+                                          </label>
+                                          <textarea 
+                                            className="w-full mt-2 text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow resize-y min-h-[60px]"
+                                            placeholder="その他の確認事項（空室状況、内見方法など）"
+                                            value={task.data?.notes || ''}
+                                            onChange={(e) => handleTaskDataChange(phase.id, task.id, { ...task.data, notes: e.target.value })}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <p className={`text-xs sm:text-sm transition-colors ${task.completed ? 'text-slate-400' : 'text-slate-500'}`}>
+                                          {task.description}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -974,29 +1158,14 @@ export default function App() {
                                     }
 
                                     return (
-                                      <div key={factor.id} className={`space-y-2 ${factor.type === 'textarea' || factor.type === 'checkbox_group' ? 'md:col-span-2' : ''}`}>
+                                      <div key={factor.id} className={`space-y-2 ${factor.type === 'textarea' || factor.type === 'checkbox_group' || factor.id.endsWith('-other') ? 'md:col-span-2' : ''}`}>
                                         <label className="text-xs font-semibold text-slate-600">{factor.title}</label>
                                         
-                                        {factor.type === 'text' && (
-                                        <input 
-                                          type="text" 
-                                          value={factor.value || ''} 
-                                          onChange={(e) => handleFactorChange(phase.id, factor.id, e.target.value)} 
-                                          className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" 
-                                          placeholder={factor.placeholder} 
-                                        />
-                                      )}
-
-                                      {factor.type === 'textarea' && (
-                                        <textarea 
-                                          value={factor.value || ''} 
-                                          onChange={(e) => handleFactorChange(phase.id, factor.id, e.target.value)} 
-                                          className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow resize-y min-h-[80px]" 
-                                          placeholder={factor.placeholder} 
-                                        />
-                                      )}
-                                      
-                                      {factor.type === 'select' && (
+                                        {(factor.type === 'text' || factor.type === 'textarea') && (
+                                          <FactorInput factor={factor} phaseId={phase.id} handleFactorChange={handleFactorChange} />
+                                        )}
+                                        
+                                        {factor.type === 'select' && (
                                         <select 
                                           value={factor.value || ''} 
                                           onChange={(e) => handleFactorChange(phase.id, factor.id, e.target.value)} 

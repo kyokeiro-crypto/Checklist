@@ -88,8 +88,7 @@ const initialData: Phase[] = [
     title: '2. 物件選定・提案',
     iconName: 'search',
     factors: [
-      { id: 'f2-1', title: '初期費用希望', type: 'checkbox_group', value: [], options: ['敷金ゼロ', '礼金ゼロ', 'フリーレント希望', 'ネット無料'] },
-      { id: 'f2-2', title: '資料提示方法', type: 'select', value: '', options: ['管理会社図面 (日本語)', '翻訳版テンプレート', 'VR / 動画案内'] },
+      { id: 'f2-1', title: '初期費用希望', type: 'checkbox_group', value: [], options: ['敷金ゼロ', '礼金ゼロ', 'フリーレント希望', 'ネット無料', '部屋清掃費(契約時)', '部屋清掃費(退去時)', '消毒代(契約時)', '消毒代(退去時)', 'FF清掃費(契約時)', 'FF清掃費(退去時)', 'エアコン清掃費(契約時)', 'エアコン清掃費(退去時)'] },
     ],
     tasks: [
       { id: 't2-2', title: '物件選定・確認', description: '問い合わせた物件情報をアーカイブとして記録します', completed: false, data: { properties: [] } },
@@ -100,11 +99,10 @@ const initialData: Phase[] = [
     title: '3. 内覧準備・現地確認',
     iconName: 'eye',
     factors: [
-      { id: 'f3-1', title: '鍵の手配方法', type: 'select', value: '', options: ['現地暗証番号', '管理会社借用', '業者間借用', 'オートロック直接解錠'] },
-      { id: 'f3-2', title: '現地チェック項目', type: 'checkbox_group', value: [], options: ['ゴミ置き場確認', '採光・防音確認', '携帯電波確認', '寸法測定 (カーテン/冷蔵庫)'] },
+      { id: 'f3-2', title: '現地チェック項目', type: 'checkbox_group', value: [], options: ['ゴミ置き場確認', '採光・防音確認', '携帯電波確認', '部屋の向き・日当たり', 'Wi-Fi状況', '水道・電気・ガスメーターの位置', '居室・寝室の照明有無', 'キッチンコンロ有無', '換気扇', '浴室追い焚き有無', '浴室乾燥機有無'] },
     ],
     tasks: [
-      { id: 't3-1', title: '内覧予約', description: '管理会社へ内覧予約、鍵の取得方法の確認', completed: false },
+      { id: 't3-1', title: '内覧予約・鍵情報確認', description: '管理会社への空室・内覧可否の確認と、鍵の手配方法（来店借用・現地暗証番号など）を記録します。', completed: false, data: { viewings: [] } },
       { id: 't3-2', title: '現地案内', description: 'お客様と待ち合わせ、物件のメリット・デメリットを説明', completed: false },
     ]
   },
@@ -499,6 +497,54 @@ export default function App() {
 
     const newProperties = task.data.properties.filter((p: any) => p.id !== propertyId);
     handleTaskDataChange(phaseId, taskId, { ...task.data, properties: newProperties });
+  };
+
+  const handleAddViewing = (phaseId: string, taskId: string) => {
+    if (!selectedChecklist) return;
+    const phase = selectedChecklist.phases.find((p: Phase) => p.id === phaseId);
+    const task = phase?.tasks.find((t: Task) => t.id === taskId);
+    if (!task) return;
+    const viewings = task.data?.viewings || [];
+    handleTaskDataChange(phaseId, taskId, {
+      ...task.data,
+      viewings: [...viewings, { 
+        id: Date.now().toString(), 
+        viewingType: '現地案内',
+        propertyName: '', 
+        roomNumber: '', 
+        vacancyStatus: '空室', 
+        keyMethod: '管理会社で借用(要署名)',
+        otherKeyMethod: '',
+        autoLockPin: '',
+        keyBoxPin: '',
+        keyBoxLocation: '',
+        customerInterest: '',
+        feedbackNotes: ''
+      }]
+    });
+  };
+
+  const handleUpdateViewing = (phaseId: string, taskId: string, viewingId: string, field: string, value: any) => {
+    if (!selectedChecklist) return;
+    const phase = selectedChecklist.phases.find((p: Phase) => p.id === phaseId);
+    const task = phase?.tasks.find((t: Task) => t.id === taskId);
+    if (!task || !task.data || !task.data.viewings) return;
+
+    const newViewings = task.data.viewings.map((v: any) => 
+      v.id === viewingId ? { ...v, [field]: value } : v
+    );
+    
+    handleTaskDataChange(phaseId, taskId, { ...task.data, viewings: newViewings });
+  };
+
+  const handleDeleteViewing = (phaseId: string, taskId: string, viewingId: string) => {
+    if (!selectedChecklist) return;
+    const phase = selectedChecklist.phases.find((p: Phase) => p.id === phaseId);
+    const task = phase?.tasks.find((t: Task) => t.id === taskId);
+    if (!task || !task.data || !task.data.viewings) return;
+
+    const newViewings = task.data.viewings.filter((v: any) => v.id !== viewingId);
+    handleTaskDataChange(phaseId, taskId, { ...task.data, viewings: newViewings });
   };
 
   const toggleTask = (phaseId: string, taskId: string) => {
@@ -1179,6 +1225,216 @@ export default function App() {
                                           >
                                             <Plus className="w-4 h-4" />
                                             <span>物件を追加してアーカイブ</span>
+                                          </button>
+                                        </div>
+                                      ) : task.id === 't3-1' ? (
+                                        <div className="mt-3 space-y-4" onClick={e => e.stopPropagation()}>
+                                          <p className="text-sm text-slate-500 mb-2">{task.description}</p>
+                                          {task.data?.viewings?.map((viewing: any) => (
+                                            <div key={viewing.id} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm relative group">
+                                              <button 
+                                                onClick={() => handleDeleteViewing(phase.id, task.id, viewing.id)}
+                                                className="absolute top-2 right-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              >
+                                                <X className="w-4 h-4" />
+                                              </button>
+                                              
+                                              <div className="mb-4 bg-slate-50 p-3 rounded-md border border-slate-200">
+                                                <label className="block text-xs font-bold text-slate-700 mb-2">案内方法</label>
+                                                <div className="flex space-x-6">
+                                                  <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input 
+                                                      type="radio" 
+                                                      name={`viewingType-${viewing.id}`} 
+                                                      value="現地案内" 
+                                                      checked={viewing.viewingType !== 'オンライン案内'} 
+                                                      onChange={() => handleUpdateViewing(phase.id, task.id, viewing.id, 'viewingType', '現地案内')} 
+                                                      className="text-blue-600 focus:ring-blue-500 w-4 h-4" 
+                                                    />
+                                                    <span className="text-sm text-slate-700 font-medium">現地案内</span>
+                                                  </label>
+                                                  <label className="flex items-center space-x-2 cursor-pointer">
+                                                    <input 
+                                                      type="radio" 
+                                                      name={`viewingType-${viewing.id}`} 
+                                                      value="オンライン案内" 
+                                                      checked={viewing.viewingType === 'オンライン案内'} 
+                                                      onChange={() => handleUpdateViewing(phase.id, task.id, viewing.id, 'viewingType', 'オンライン案内')} 
+                                                      className="text-blue-600 focus:ring-blue-500 w-4 h-4" 
+                                                    />
+                                                    <span className="text-sm text-slate-700 font-medium">オンライン案内</span>
+                                                  </label>
+                                                </div>
+                                              </div>
+
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                                <div>
+                                                  <label className="block text-xs font-medium text-slate-500 mb-1">物件名</label>
+                                                  <input 
+                                                    type="text" 
+                                                    className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                    placeholder="例: メゾン〇〇"
+                                                    value={viewing.propertyName || ''}
+                                                    onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'propertyName', e.target.value)}
+                                                  />
+                                                </div>
+                                                <div>
+                                                  <label className="block text-xs font-medium text-slate-500 mb-1">号室</label>
+                                                  <input 
+                                                    type="text" 
+                                                    className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                    placeholder="例: 201"
+                                                    value={viewing.roomNumber || ''}
+                                                    onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'roomNumber', e.target.value)}
+                                                  />
+                                                </div>
+                                              </div>
+
+                                              <div className="bg-slate-50 p-3 rounded-md border border-slate-200 space-y-3 mb-3">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                  <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">空室状況</label>
+                                                    <select
+                                                      className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white"
+                                                      value={viewing.vacancyStatus || '空室'}
+                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'vacancyStatus', e.target.value)}
+                                                    >
+                                                      <option value="空室">空室</option>
+                                                      <option value="居住中(退去予定)">居住中(退去予定)</option>
+                                                    </select>
+                                                  </div>
+                                                  {viewing.vacancyStatus === '居住中(退去予定)' && (
+                                                    <div>
+                                                      <label className="block text-xs font-medium text-slate-500 mb-1">退去予定日</label>
+                                                      <input 
+                                                        type="date" 
+                                                        className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                        value={viewing.moveOutDate || ''}
+                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'moveOutDate', e.target.value)}
+                                                      />
+                                                    </div>
+                                                  )}
+                                                  <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">内覧可能日</label>
+                                                    <input 
+                                                      type="date" 
+                                                      className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                      value={viewing.viewableDate || ''}
+                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'viewableDate', e.target.value)}
+                                                    />
+                                                  </div>
+                                                  <div>
+                                                    <label className="block text-xs font-medium text-slate-500 mb-1">お客様との内覧日時</label>
+                                                    <input 
+                                                      type="datetime-local" 
+                                                      className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                      value={viewing.clientViewingDateTime || ''}
+                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'clientViewingDateTime', e.target.value)}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              <div className="bg-blue-50 p-3 rounded-md border border-blue-100 space-y-3">
+                                                <p className="text-xs font-bold text-blue-800">鍵の取得方法</p>
+                                                <div>
+                                                  <select
+                                                    className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white"
+                                                    value={viewing.keyMethod || '管理会社で借用(要署名)'}
+                                                    onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyMethod', e.target.value)}
+                                                  >
+                                                    <option value="管理会社で借用(要署名)">管理会社で借用(要署名)</option>
+                                                    <option value="現地キーボックス">現地キーボックス</option>
+                                                    <option value="その他">その他</option>
+                                                  </select>
+                                                </div>
+                                                
+                                                {viewing.keyMethod === 'その他' && (
+                                                  <div className="mt-2">
+                                                    <input 
+                                                      type="text" 
+                                                      className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                      placeholder="その他の取得方法を入力"
+                                                      value={viewing.otherKeyMethod || ''}
+                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'otherKeyMethod', e.target.value)}
+                                                    />
+                                                  </div>
+                                                )}
+                                                
+                                                {viewing.keyMethod === '現地キーボックス' && (
+                                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+                                                    <div>
+                                                      <label className="block text-xs font-medium text-blue-700 mb-1">オートロック暗証番号</label>
+                                                      <input 
+                                                        type="text" 
+                                                        className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                        placeholder="例: 1234E"
+                                                        value={viewing.autoLockPin || ''}
+                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'autoLockPin', e.target.value)}
+                                                      />
+                                                    </div>
+                                                    <div>
+                                                      <label className="block text-xs font-medium text-blue-700 mb-1">キーボックス暗証番号</label>
+                                                      <input 
+                                                        type="text" 
+                                                        className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                        placeholder="例: 0000"
+                                                        value={viewing.keyBoxPin || ''}
+                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyBoxPin', e.target.value)}
+                                                      />
+                                                    </div>
+                                                    <div>
+                                                      <label className="block text-xs font-medium text-blue-700 mb-1">設置場所</label>
+                                                      <input 
+                                                        type="text" 
+                                                        className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                                                        placeholder="例: 駐輪場パイプ"
+                                                        value={viewing.keyBoxLocation || ''}
+                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyBoxLocation', e.target.value)}
+                                                      />
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              <div className="bg-amber-50 p-3 rounded-md border border-amber-100 space-y-3 mt-3">
+                                                <p className="text-xs font-bold text-amber-800">内覧フィードバック</p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                  <div>
+                                                    <label className="block text-xs font-medium text-amber-700 mb-1">お客様の反応・意向</label>
+                                                    <select
+                                                      className="w-full text-sm px-3 py-2 border border-amber-200 rounded-md focus:ring-2 focus:ring-amber-500 outline-none transition-shadow bg-white"
+                                                      value={viewing.customerInterest || ''}
+                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'customerInterest', e.target.value)}
+                                                    >
+                                                      <option value="">選択してください</option>
+                                                      <option value="申込希望">申込希望 (お気に入り)</option>
+                                                      <option value="前向きに検討">前向きに検討</option>
+                                                      <option value="キープ (他も見る)">キープ (他も見る)</option>
+                                                      <option value="見送り (条件合わず)">見送り (条件合わず)</option>
+                                                    </select>
+                                                  </div>
+                                                  <div className="sm:col-span-2">
+                                                    <label className="block text-xs font-medium text-amber-700 mb-1">コメント・懸念点</label>
+                                                    <textarea 
+                                                      className="w-full text-sm px-3 py-2 border border-amber-200 rounded-md focus:ring-2 focus:ring-amber-500 outline-none transition-shadow bg-white"
+                                                      rows={2}
+                                                      placeholder="例: 日当たりは良いが、収納が少し足りないと感じている"
+                                                      value={viewing.feedbackNotes || ''}
+                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'feedbackNotes', e.target.value)}
+                                                    />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                          
+                                          <button 
+                                            onClick={() => handleAddViewing(phase.id, task.id)}
+                                            className="w-full py-2 border-2 border-dashed border-slate-300 text-slate-500 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
+                                          >
+                                            <Plus className="w-4 h-4" />
+                                            <span>内覧物件を追加</span>
                                           </button>
                                         </div>
                                       ) : (

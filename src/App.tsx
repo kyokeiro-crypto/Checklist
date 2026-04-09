@@ -99,7 +99,7 @@ const initialData: Phase[] = [
     title: '3. 内覧準備・現地確認',
     iconName: 'eye',
     factors: [
-      { id: 'f3-2', title: '現地チェック項目', type: 'checkbox_group', value: [], options: ['ゴミ置き場確認', '採光・防音確認', '携帯電波確認', '部屋の向き・日当たり', 'Wi-Fi状況', '水道・電気・ガスメーターの位置', '居室・寝室の照明', 'キッチンコンロ', '換気扇', '浴室追い焚き', '浴室乾燥機', 'エアコン', '暖房 (灯油/ガス)', '給湯器'] },
+      { id: 'f3-2', title: '現地チェック項目', type: 'checkbox_group', value: [], options: ['ゴミ置き場確認', '採光・防音確認', '携帯電波確認', '部屋の向き・日当たり', 'Wi-Fi状況', '水道・電気・ガスメーターの位置', '居室・寝室の照明', 'キッチンコンロ', '換気扇', '浴室追い焚き', '浴室乾燥機', 'エアコン', '暖房 (灯油)', '暖房 (ガス)', '暖房 (電化)', '給湯器'] },
     ],
     tasks: [
       { id: 't3-1', title: '内覧予約・鍵情報確認', description: '管理会社への空室・内覧可否の確認と、鍵の手配方法（来店借用・現地暗証番号など）を記録します。', completed: false, data: { viewings: [] } },
@@ -177,43 +177,99 @@ const calculateAgeAndEra = (dateString: string) => {
   }
 };
 
-const FactorInput = ({ factor, phaseId, handleFactorChange }: { factor: Factor, phaseId: string, handleFactorChange: (phaseId: string, factorId: string, newValue: any) => void }) => {
-  const [localValue, setLocalValue] = useState(factor.value || '');
+const CompositionInput = ({ value, onChange, className, placeholder, type = "text", autoFocus }: { value: string, onChange: (val: string) => void, className?: string, placeholder?: string, type?: string, autoFocus?: boolean }) => {
+  const [localValue, setLocalValue] = useState(value || '');
   const [isComposing, setIsComposing] = useState(false);
 
   useEffect(() => {
     if (!isComposing) {
-      setLocalValue(factor.value || '');
+      setLocalValue(value || '');
     }
-  }, [factor.value, isComposing]);
+  }, [value, isComposing]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(e.target.value);
     if (!isComposing) {
-      handleFactorChange(phaseId, factor.id, e.target.value);
+      onChange(e.target.value);
     }
   };
 
   const handleCompositionStart = () => setIsComposing(true);
-  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
     setIsComposing(false);
-    handleFactorChange(phaseId, factor.id, e.currentTarget.value);
+    onChange(e.currentTarget.value);
   };
 
   const handleBlur = () => {
-    if (localValue !== factor.value) {
-      handleFactorChange(phaseId, factor.id, localValue);
+    if (localValue !== value) {
+      onChange(localValue);
     }
   };
 
+  return (
+    <input
+      type={type}
+      className={className}
+      placeholder={placeholder}
+      value={localValue}
+      onChange={handleChange}
+      onCompositionStart={handleCompositionStart}
+      onCompositionEnd={handleCompositionEnd}
+      onBlur={handleBlur}
+      autoFocus={autoFocus}
+    />
+  );
+};
+
+const CompositionTextarea = ({ value, onChange, className, placeholder, rows }: { value: string, onChange: (val: string) => void, className?: string, placeholder?: string, rows?: number }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const [isComposing, setIsComposing] = useState(false);
+
+  useEffect(() => {
+    if (!isComposing) {
+      setLocalValue(value || '');
+    }
+  }, [value, isComposing]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalValue(e.target.value);
+    if (!isComposing) {
+      onChange(e.target.value);
+    }
+  };
+
+  const handleCompositionStart = () => setIsComposing(true);
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+    setIsComposing(false);
+    onChange(e.currentTarget.value);
+  };
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  return (
+    <textarea
+      className={className}
+      placeholder={placeholder}
+      value={localValue}
+      onChange={handleChange}
+      onCompositionStart={handleCompositionStart}
+      onCompositionEnd={handleCompositionEnd}
+      onBlur={handleBlur}
+      rows={rows}
+    />
+  );
+};
+
+const FactorInput = ({ factor, phaseId, handleFactorChange }: { factor: Factor, phaseId: string, handleFactorChange: (phaseId: string, factorId: string, newValue: any) => void }) => {
   if (factor.type === 'textarea') {
     return (
-      <textarea 
-        value={localValue} 
-        onChange={handleChange} 
-        onCompositionStart={handleCompositionStart}
-        onCompositionEnd={handleCompositionEnd}
-        onBlur={handleBlur}
+      <CompositionTextarea 
+        value={factor.value || ''} 
+        onChange={(val) => handleFactorChange(phaseId, factor.id, val)} 
         className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow resize-y min-h-[80px]" 
         placeholder={factor.placeholder} 
       />
@@ -221,13 +277,10 @@ const FactorInput = ({ factor, phaseId, handleFactorChange }: { factor: Factor, 
   }
 
   return (
-    <input 
+    <CompositionInput 
       type="text" 
-      value={localValue} 
-      onChange={handleChange} 
-      onCompositionStart={handleCompositionStart}
-      onCompositionEnd={handleCompositionEnd}
-      onBlur={handleBlur}
+      value={factor.value || ''} 
+      onChange={(val) => handleFactorChange(phaseId, factor.id, val)} 
       className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" 
       placeholder={factor.placeholder} 
     />
@@ -845,11 +898,11 @@ export default function App() {
                 <p className="text-slate-600 mb-6 whitespace-pre-wrap">{modalConfig.message}</p>
                 
                 {modalConfig.type === 'prompt' && (
-                  <input 
+                  <CompositionInput 
                     type="text" 
                     autoFocus
                     value={modalConfig.inputValue}
-                    onChange={(e) => setModalConfig(prev => ({ ...prev, inputValue: e.target.value }))}
+                    onChange={(val) => setModalConfig(prev => ({ ...prev, inputValue: val }))}
                     className="w-full px-3 py-2 border border-slate-300 rounded-md mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="トークンを入力..."
                   />
@@ -904,10 +957,10 @@ export default function App() {
           </div>
           
           <form onSubmit={handleAddCustomer} className="flex space-x-2">
-            <input
+            <CompositionInput
               type="text"
               value={newCustomerName}
-              onChange={(e) => setNewCustomerName(e.target.value)}
+              onChange={(val) => setNewCustomerName(val)}
               placeholder="新規お客様名"
               className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -1231,32 +1284,32 @@ export default function App() {
                                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">管理会社名</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: 〇〇不動産"
                                                     value={property.managementCompany || ''}
-                                                    onChange={(e) => handleUpdateProperty(phase.id, task.id, property.id, 'managementCompany', e.target.value)}
+                                                    onChange={(val) => handleUpdateProperty(phase.id, task.id, property.id, 'managementCompany', val)}
                                                   />
                                                 </div>
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">物件名</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: メゾン〇〇"
                                                     value={property.apartmentName || ''}
-                                                    onChange={(e) => handleUpdateProperty(phase.id, task.id, property.id, 'apartmentName', e.target.value)}
+                                                    onChange={(val) => handleUpdateProperty(phase.id, task.id, property.id, 'apartmentName', val)}
                                                   />
                                                 </div>
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">号室</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: 201"
                                                     value={property.roomNumber || ''}
-                                                    onChange={(e) => handleUpdateProperty(phase.id, task.id, property.id, 'roomNumber', e.target.value)}
+                                                    onChange={(val) => handleUpdateProperty(phase.id, task.id, property.id, 'roomNumber', val)}
                                                   />
                                                 </div>
                                               </div>
@@ -1293,11 +1346,11 @@ export default function App() {
                                                 </div>
                                               </div>
 
-                                              <textarea 
+                                              <CompositionTextarea 
                                                 className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow resize-y min-h-[60px]"
                                                 placeholder="その他の確認事項（空室状況、内見方法など）"
                                                 value={property.notes || ''}
-                                                onChange={(e) => handleUpdateProperty(phase.id, task.id, property.id, 'notes', e.target.value)}
+                                                onChange={(val) => handleUpdateProperty(phase.id, task.id, property.id, 'notes', val)}
                                               />
                                             </div>
                                           ))}
@@ -1353,22 +1406,22 @@ export default function App() {
                                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">物件名</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: メゾン〇〇"
                                                     value={viewing.propertyName || ''}
-                                                    onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'propertyName', e.target.value)}
+                                                    onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'propertyName', val)}
                                                   />
                                                 </div>
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">号室</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: 201"
                                                     value={viewing.roomNumber || ''}
-                                                    onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'roomNumber', e.target.value)}
+                                                    onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'roomNumber', val)}
                                                   />
                                                 </div>
                                               </div>
@@ -1434,12 +1487,12 @@ export default function App() {
                                                 
                                                 {viewing.keyMethod === 'その他' && (
                                                   <div className="mt-2">
-                                                    <input 
+                                                    <CompositionInput 
                                                       type="text" 
                                                       className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                       placeholder="その他の取得方法を入力"
                                                       value={viewing.otherKeyMethod || ''}
-                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'otherKeyMethod', e.target.value)}
+                                                      onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'otherKeyMethod', val)}
                                                     />
                                                   </div>
                                                 )}
@@ -1448,32 +1501,32 @@ export default function App() {
                                                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
                                                     <div>
                                                       <label className="block text-xs font-medium text-blue-700 mb-1">オートロック暗証番号</label>
-                                                      <input 
+                                                      <CompositionInput 
                                                         type="text" 
                                                         className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                         placeholder="例: 1234E"
                                                         value={viewing.autoLockPin || ''}
-                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'autoLockPin', e.target.value)}
+                                                        onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'autoLockPin', val)}
                                                       />
                                                     </div>
                                                     <div>
                                                       <label className="block text-xs font-medium text-blue-700 mb-1">キーボックス暗証番号</label>
-                                                      <input 
+                                                      <CompositionInput 
                                                         type="text" 
                                                         className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                         placeholder="例: 0000"
                                                         value={viewing.keyBoxPin || ''}
-                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyBoxPin', e.target.value)}
+                                                        onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyBoxPin', val)}
                                                       />
                                                     </div>
                                                     <div>
                                                       <label className="block text-xs font-medium text-blue-700 mb-1">設置場所</label>
-                                                      <input 
+                                                      <CompositionInput 
                                                         type="text" 
                                                         className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                         placeholder="例: 駐輪場パイプ"
                                                         value={viewing.keyBoxLocation || ''}
-                                                        onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyBoxLocation', e.target.value)}
+                                                        onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'keyBoxLocation', val)}
                                                       />
                                                     </div>
                                                   </div>
@@ -1499,12 +1552,12 @@ export default function App() {
                                                   </div>
                                                   <div className="sm:col-span-2">
                                                     <label className="block text-xs font-medium text-amber-700 mb-1">コメント・懸念点</label>
-                                                    <textarea 
+                                                    <CompositionTextarea 
                                                       className="w-full text-sm px-3 py-2 border border-amber-200 rounded-md focus:ring-2 focus:ring-amber-500 outline-none transition-shadow bg-white"
                                                       rows={2}
                                                       placeholder="例: 日当たりは良いが、収納が少し足りないと感じている"
                                                       value={viewing.feedbackNotes || ''}
-                                                      onChange={(e) => handleUpdateViewing(phase.id, task.id, viewing.id, 'feedbackNotes', e.target.value)}
+                                                      onChange={(val) => handleUpdateViewing(phase.id, task.id, viewing.id, 'feedbackNotes', val)}
                                                     />
                                                   </div>
                                                 </div>
@@ -1561,22 +1614,22 @@ export default function App() {
                                                 </div>
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">物件名</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: メゾン〇〇"
                                                     value={app.propertyName || ''}
-                                                    onChange={(e) => handleUpdateApplication(phase.id, task.id, app.id, 'propertyName', e.target.value)}
+                                                    onChange={(val) => handleUpdateApplication(phase.id, task.id, app.id, 'propertyName', val)}
                                                   />
                                                 </div>
                                                 <div>
                                                   <label className="block text-xs font-medium text-slate-500 mb-1">号室</label>
-                                                  <input 
+                                                  <CompositionInput 
                                                     type="text" 
                                                     className="w-full text-sm px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
                                                     placeholder="例: 101"
                                                     value={app.roomNumber || ''}
-                                                    onChange={(e) => handleUpdateApplication(phase.id, task.id, app.id, 'roomNumber', e.target.value)}
+                                                    onChange={(val) => handleUpdateApplication(phase.id, task.id, app.id, 'roomNumber', val)}
                                                   />
                                                 </div>
                                               </div>
@@ -1644,12 +1697,12 @@ export default function App() {
                                                   </div>
                                                   <div className="sm:col-span-2">
                                                     <label className="block text-xs font-medium text-blue-700 mb-1">審査メモ (保証会社の変更履歴など)</label>
-                                                    <textarea 
+                                                    <CompositionTextarea 
                                                       className="w-full text-sm px-3 py-2 border border-blue-200 rounded-md focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white"
                                                       rows={2}
                                                       placeholder="例: A社否決のため、B社で再審査中"
                                                       value={app.screeningNotes || ''}
-                                                      onChange={(e) => handleUpdateApplication(phase.id, task.id, app.id, 'screeningNotes', e.target.value)}
+                                                      onChange={(val) => handleUpdateApplication(phase.id, task.id, app.id, 'screeningNotes', val)}
                                                     />
                                                   </div>
                                                 </div>
